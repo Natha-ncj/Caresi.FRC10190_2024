@@ -1,92 +1,88 @@
-
 package frc.robot;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.revrobotics.CANSparkLowLevel;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkBase.IdleMode;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-/**
- * The VM is configured to automatically run this class, and to call the functions corresponding to
- * each mode, as described in the TimedRobot documentation. If you change the name of this class or
- * the package after creating this project, you must also update the build.gradle file in the
- * project.
- */
 public class Robot extends TimedRobot {
-   /**
-   * This function is run when the robot is first started up and should be used for any
-   * initialization code.
+  /*
+   * Autonomous selection options.
    */
-  private Spark leftmotor1 = new Spark(0);
-  private Spark leftmotor2 = new Spark(1);
-  private Spark rightmotor1 = new Spark(2);
-  private Spark rightmotor2 = new Spark(3);
+  private static final String kNothingAuto = "do nothing";
+  private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  private Joystick joy1 = new Joystick(0);
+  CANSparkMax driveLeftSparkMaster = new CANSparkMax(4, CANSparkLowLevel.MotorType.kBrushless);
+  CANSparkMax driveRightSparkMaster = new CANSparkMax(2, CANSparkLowLevel.MotorType.kBrushless);
+  
+  CANSparkMax driveLeftSparkSlave = new CANSparkMax(3, CANSparkLowLevel.MotorType.kBrushless);
+  CANSparkMax driveRightSparkSlave = new CANSparkMax(1, CANSparkLowLevel.MotorType.kBrushless);
+  
+  DifferentialDrive drive = new DifferentialDrive(driveLeftSparkMaster, driveRightSparkMaster);
+  
+  Joystick j = new Joystick(0);
+  
+  @Override
+  public void robotInit() {
+    m_chooser.setDefaultOption("do nothing", kNothingAuto);
+    SmartDashboard.putData("Auto choices", m_chooser);
+    
+    driveLeftSparkMaster.setInverted(false);
+    driveLeftSparkSlave.setInverted(false);
+    
+    driveRightSparkMaster.setInverted(true);
+    driveRightSparkSlave.setInverted(true);
 
-  private double startTime; 
+    
+    driveLeftSparkSlave.follow(driveLeftSparkMaster);
+    driveRightSparkSlave.follow(driveRightSparkMaster);
+    
 
-  @Override 
-  public void robotInit() {}
+    driveLeftSparkMaster.setIdleMode(IdleMode.kBrake);
+    driveLeftSparkSlave.setIdleMode(IdleMode.kBrake);
+    
+    driveRightSparkMaster.setIdleMode(IdleMode.kBrake);
+    driveRightSparkSlave.setIdleMode(IdleMode.kBrake);
+
+    
+  }
+
+  public void setDriveMotors(double forward, double turn) {
+    drive.arcadeDrive(forward*0.7, turn*0.6);
+  }
 
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+    SmartDashboard.putNumber("Time (seconds)", Timer.getFPGATimestamp());
+  }
+
+  double autonomousStartTime;
+  double autonomousIntakePower;
 
   @Override
   public void autonomousInit() {
-    startTime = Timer.getFPGATimestamp();
+    autonomousStartTime = Timer.getFPGATimestamp();
   }
+
   @Override
-  public void autonomousPeriodic() {
-    var time = Timer.getFPGATimestamp();  
-
-if (time - startTime < 3); {
-
-   leftmotor1.set(0.6);
-   leftmotor2.set(0.6);
-   rightmotor1.set(0.6);
-   rightmotor2.set(0.6); 
-}  {
-  leftmotor1.set(0);
-   leftmotor2.set(0);
-   rightmotor1.set(0);
-   rightmotor2.set(0);
-}
-  }
+  public void autonomousPeriodic() {}
 
   @Override
   public void teleopInit() {}
 
   @Override
   public void teleopPeriodic() {
-    double speed = -joy1.getRawAxis(1) * 0.6;
-    double turn = joy1.getRawAxis(4) * 0.3;
-     
-    double left = speed + turn; 
-    double right = speed - turn; 
-
-
-    leftmotor1.set(left);
-    leftmotor2.set(left);
-    rightmotor1.set(-right);
-    rightmotor2.set(-right); 
+    setDriveMotors(-j.getRawAxis(1), -j.getRawAxis(4));
   }
-
-  @Override
-  public void disabledInit() {}
-
-  @Override
-  public void disabledPeriodic() {}
-
-  @Override
-  public void testInit() {}
-
-  @Override
-  public void testPeriodic() {}
-
-  @Override
-  public void simulationInit() {}
-
-  @Override
-  public void simulationPeriodic() {}
 }
+
